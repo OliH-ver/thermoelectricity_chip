@@ -1,4 +1,3 @@
-
 \documentclass[aspectratio=169,11pt]{ctexbeamer}
 \usetheme{Madrid}
 \usepackage{graphicx}
@@ -7,13 +6,31 @@
 \usepackage{siunitx}
 \usepackage{tikz}
 \usepackage{hyperref}
-\title{基于热电芯片的“双谱分离”天空辐射观测仪}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\title{基于热电芯片的"双谱分离"天空辐射观测系统}
+\subtitle{创新型大气辐射测量与智能天气监测方案}
 \author{第二组}
 \institute{芯片发电技术基础与应用}
 \date{\today}
 
+% 设置代码高亮
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!50!black},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray}
+}
+
 \begin{document}
 
+% 封面
 \begin{frame}
   \titlepage
 \end{frame}
@@ -23,8 +40,635 @@
 \tableofcontents
 \end{frame}
 
+\section{往届项目分析与不足}
 
+\begin{frame}{往届项目回顾：2022秋季第三组}
+\frametitle{2022秋季第三组：大气逆辐射测量}
+\begin{block}{项目主要内容}
+\begin{itemize}
+    \item 利用热电芯片测量大气长波辐射
+    \item 采用差分测量方法抑制共模噪声
+    \item 使用RGB图像分析云量变化
+\end{itemize}
+\end{block}
 
+\begin{alertblock}{主要不足}
+\begin{enumerate}
+    \item \textbf{数据采集问题}：手动读取万用表，导致数据量少、采样频率低、时间同步困难
+    \item \textbf{风噪抑制不足}：对风致温度漂移的抑制效果有限
+    \item \textbf{图像分析简陋}：仅使用像素点百分比计算云量，缺乏深度学习方法
+    \item \textbf{波段分离不完整}：未能有效分离太阳短波辐射和大气长波辐射
+\end{enumerate}
+\end{alertblock}
+\end{frame}
 
+\begin{frame}{往届项目回顾：2024秋季第一组}
+\frametitle{2024秋季第一组：基于热电芯片的实时天气监测系统}
+\begin{block}{项目主要内容}
+\begin{itemize}
+    \item 改进聚光装置设计（六边形平面镜阵列）
+    \item 使用涂黑热电芯片提高辐射吸收效率
+    \item 尝试RGB直方图分析天气状况
+\end{itemize}
+\end{block}
+
+\begin{alertblock}{主要不足}
+\begin{enumerate}
+    \item \textbf{冷端加热问题}：冷端被日照直接加热，影响测量准确性
+    \item \textbf{数据采集自动化不足}：仍依赖人工操作，无法实现高频连续采集
+    \item \textbf{光谱分析局限}：RGB分析方法过于简单，未能深入挖掘光谱信息
+    \item \textbf{缺乏预测功能}：仅能描述当前状态，无法预测天气变化趋势
+\end{enumerate}
+\end{alertblock}
+\end{frame}
+
+\section{基础内容}
+
+\subsection{项目核心目标}
+
+\begin{frame}{项目核心目标与创新点}
+\begin{block}{核心目标}
+基于热电芯片构建一套\textbf{自动化、高精度、智能化}的天空辐射观测系统，实现：
+\begin{itemize}
+    \item 太阳短波辐射（SW）与大气长波辐射（LW）的\textbf{物理分离}
+    \item 高频率、多通道的\textbf{自动化数据采集}
+    \item 基于深度学习的\textbf{智能天气分析与预测}
+\end{itemize}
+\end{block}
+
+\begin{block}{核心创新点}
+\begin{enumerate}
+    \item 双谱分离技术：无需复杂滤波轮，通过双通道测量实现波段分离
+    \item 自动化多通道采集：解决往届手动测量的痛点
+    \item AI驱动的智能分析：CNN图像识别 + 时间序列预测
+    \item 完整的冷端稳定方案：散热鳍片 + 遮阳罩 + 差分测量
+\end{enumerate}
+\end{block}
+\end{frame}
+
+\subsection{双谱分离系统设计}
+
+\begin{frame}{双谱分离原理}
+\frametitle{核心技术：双谱分离系统}
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{物理原理}
+天空辐射包含两个主要成分：
+\begin{itemize}
+    \item \textbf{太阳短波辐射（SW）}：0.3-3 $\mu$m，主要是可见光和近红外
+    \item \textbf{大气长波辐射（LW）}：3-100 $\mu$m，主要是热红外辐射
+\end{itemize}
+\end{block}
+
+\begin{block}{分离方法}
+通过\textbf{双通道测量} + \textbf{差分计算}：
+\begin{align*}
+V_A &\approx k \cdot (P_{SW} + P_{LW}) \\
+V_B &\approx k \cdot P_{LW} \\
+V_{SW} &= V_A - V_B
+\end{align*}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{实现方案}
+\textbf{装置A（总辐射通道）}：
+\begin{itemize}
+    \item 涂黑热电芯片（吸收全波段）
+    \item 无滤光片
+\end{itemize}
+
+\textbf{装置B（长波通道）}：
+\begin{itemize}
+    \item 涂黑热电芯片
+    \item 加装长波窗（如黑色聚乙烯薄膜）
+    \item 阻挡短波，透过长波
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{聚光装置设计}
+\frametitle{聚光装置：六边形平面镜阵列}
+\begin{columns}
+\column{0.6\textwidth}
+\begin{block}{设计特点}
+\begin{itemize}
+    \item 采用2024秋季组改进的六边形平面镜阵列
+    \item 多镜面聚光提高辐射强度，增强信号
+    \item 两个完全相同的装置分别用于A、B通道
+\end{itemize}
+\end{block}
+
+\begin{block}{关键参数}
+\begin{itemize}
+    \item 镜面数量：6-12片
+    \item 镜面倾角：根据焦距优化
+    \item 焦点直径：匹配热电芯片尺寸
+    \item 聚光比：约5-10倍
+\end{itemize}
+\end{block}
+
+\column{0.4\textwidth}
+\begin{block}{材料选择}
+\textbf{长波窗材料}：
+\begin{itemize}
+    \item \textcolor{red}{错误}：玻璃片（阻挡长波）
+    \item \textcolor{green}{正确}：黑色聚乙烯薄膜
+    \begin{itemize}
+        \item 阻挡可见光
+        \item 透过中远红外
+        \item 成本低廉
+    \end{itemize}
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\subsection{冷端稳定与风噪抑制}
+
+\begin{frame}{冷端稳定方案}
+\frametitle{解决冷端加热与风噪问题}
+\begin{block}{问题分析}
+\begin{itemize}
+    \item 2024秋季组发现：冷端被日照直接加热，产生系统误差
+    \item 2022秋季组担心：风致温度漂移影响测量稳定性
+\end{itemize}
+\end{block}
+
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{冷端散热方案}
+\begin{enumerate}
+    \item 涂抹导热硅脂
+    \item 紧密贴装大型CPU散热鳍片
+    \item 增强冷端散热能力
+\end{enumerate}
+\end{block}
+
+\begin{block}{遮阳保护}
+设计反射罩（硬纸板+铝箔）：
+\begin{itemize}
+    \item 保护散热鳍片不被太阳直射
+    \item 只允许聚光镜反射光束照射热端
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{差分测量抑制风噪}
+借鉴2022秋季组思路：
+\begin{itemize}
+    \item \textbf{芯片1（信号片）}：焦点中心，测量（辐射+风）
+    \item \textbf{芯片2（参考片）}：焦点旁，测量（环境+风）
+    \item $V_{signal} = V_{芯片1} - V_{芯片2}$
+\end{itemize}
+差分信号消除共模风噪和环境温度漂移
+\end{block}
+\end{columns}
+\end{frame}
+
+\subsection{自动化数据采集系统}
+
+\begin{frame}{自动化数据采集系统架构}
+\frametitle{解决往届手动测量痛点}
+\begin{block}{系统组成}
+\begin{itemize}
+    \item \textbf{主控器}：Raspberry Pi（树莓派）或Arduino/ESP32
+    \item \textbf{ADC模块}：ADS1115（16位高精度ADC，内置可编程放大器）
+    \item \textbf{传感器}：多路热电芯片
+    \item \textbf{数据记录}：自动保存为CSV文件，为CNN训练准备数据集
+\end{itemize}
+\end{block}
+
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{ADS1115关键特性}
+\begin{itemize}
+    \item 16位分辨率（vs. Arduino 10位）
+    \item 4路差分输入通道
+    \item 内置PGA放大器（适合mV级信号）
+    \item I2C接口（节省引脚）
+    \item 可级联多模块
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{增益设置}
+针对热电芯片mV级信号：
+\begin{itemize}
+    \item GAIN\_SIXTEEN: $\pm$0.256V
+    \item 分辨率: 0.0078125 mV/bit
+    \item 最适合热电芯片测量
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{数据采集硬件连接}
+\frametitle{硬件连接方案}
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{树莓派 $\leftrightarrow$ ADS1115}
+\begin{tabular}{ll}
+\toprule
+树莓派引脚 & ADS1115 \\
+\midrule
+Pin 1 (3.3V) & VDD \\
+Pin 6 (GND) & GND \\
+Pin 3 (SDA) & SDA \\
+Pin 5 (SCL) & SCL \\
+\bottomrule
+\end{tabular}
+\end{block}
+
+\begin{block}{ADS1115 $\leftrightarrow$ 热电芯片}
+差分测量模式：
+\begin{itemize}
+    \item 芯片1：P $\rightarrow$ A0, N $\rightarrow$ A1
+    \item 芯片2：P $\rightarrow$ A2, N $\rightarrow$ A3
+\end{itemize}
+一个ADS1115可同时采集两路差分信号
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{多模块级联}
+通过ADDR引脚设置I2C地址：
+\begin{itemize}
+    \item ADDR $\rightarrow$ GND: 0x48
+    \item ADDR $\rightarrow$ VDD: 0x49
+    \item ADDR $\rightarrow$ SDA: 0x4A
+    \item ADDR $\rightarrow$ SCL: 0x4B
+\end{itemize}
+最多可级联4个ADS1115，实现8路差分采集
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{数据采集软件实现}
+\frametitle{Python数据采集程序}
+\begin{block}{推荐方案：树莓派 + Python}
+\begin{itemize}
+    \item 完整Linux系统，原生支持Python
+    \item 可使用PyCharm远程SSH开发
+    \item 可直接运行深度学习模型
+\end{itemize}
+\end{block}
+
+\begin{block}{代码示例（核心部分）}
+\begin{lstlisting}[language=Python]
+import board, busio
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
+import csv, time
+
+# 初始化I2C和ADS1115
+i2c = busio.I2C(board.SCL, board.SDA)
+ads = ADS.ADS1115(i2c)
+ads.gain = 16  # GAIN_SIXTEEN
+
+# 差分通道
+chan_A = AnalogIn(ads, ADS.P0, ADS.P1)
+chan_B = AnalogIn(ads, ADS.P2, ADS.P3)
+\end{lstlisting}
+\end{block}
+\end{frame}
+
+\begin{frame}[fragile]{数据采集与保存}
+\frametitle{高频数据采集与CSV保存}
+\begin{lstlisting}[language=Python]
+# 创建CSV文件并采集数据
+with open('radiation_data.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['timestamp', 'V_SW', 'V_LW', 
+                     'V_total', 'V_longwave'])
+    
+    try:
+        while True:
+            # 读取电压
+            v_total = chan_A.voltage * 1000  # 转换为mV
+            v_longwave = chan_B.voltage * 1000
+            v_sw = v_total - v_longwave  # 短波分量
+            
+            timestamp = time.time()
+            writer.writerow([timestamp, v_sw, v_longwave, 
+                           v_total, v_longwave])
+            f.flush()  # 立即写入磁盘
+            
+            time.sleep(0.5)  # 2 Hz采样率
+    except KeyboardInterrupt:
+        print("采集完成")
+\end{lstlisting}
+\end{frame}
+
+\section{创新内容}
+
+\subsection{基于CNN的智能天气识别}
+
+\begin{frame}{创新项目一：CNN天气识别模型}
+\frametitle{从图像到辐射值的智能预测}
+\begin{block}{项目目标}
+训练一个深度学习模型，使其能够"看一眼"天空照片，直接预测对应的短波（SW）和长波（LW）辐射值
+\end{block}
+
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{数据采集（Sensor Fusion）}
+\begin{enumerate}
+    \item 在双谱分离系统旁架设摄像头
+    \item 同步拍摄天空照片
+    \item 自动记录时间戳、图像、$V_{SW}$、$V_{LW}$
+    \item 形成大型训练数据集
+\end{enumerate}
+\end{block}
+
+\begin{alertblock}{超越往届}
+\begin{itemize}
+    \item 2024组：简单RGB直方图
+    \item 2022组：像素点百分比
+    \item \textbf{本方案}：深度CNN特征提取
+\end{itemize}
+\end{alertblock}
+
+\column{0.5\textwidth}
+\begin{block}{模型架构}
+\begin{itemize}
+    \item \textbf{输入}：天空图像（RGB）
+    \item \textbf{输出}：$[V_{SW}, V_{LW}]$
+    \item \textbf{骨干网络}：预训练CNN
+    \begin{itemize}
+        \item MobileNetV2（轻量）
+        \item ResNet50（精确）
+    \end{itemize}
+    \item \textbf{输出层}：2神经元全连接层
+\end{itemize}
+\end{block}
+
+\begin{block}{应用价值}
+\begin{itemize}
+    \item 无需实际测量即可估算辐射
+    \item 低成本天气监测方案
+    \item 实时云量、辐射分析
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\subsection{时间序列预测}
+
+\begin{frame}{创新项目二：辐射短期预报系统}
+\frametitle{基于时间序列的天气变化预测}
+\begin{block}{项目目标}
+利用高频时间序列数据，预测未来几分钟的辐射变化和天气趋势
+\end{block}
+
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{数据特征}
+\begin{itemize}
+    \item 高频采集：2 Hz（每秒2次）
+    \item 双通道：$V_{SW}$、$V_{LW}$
+    \item 时间窗口：过去60秒数据
+\end{itemize}
+\end{block}
+
+\begin{block}{模型方案}
+\begin{itemize}
+    \item \textbf{输入}：60×2矩阵（过去60秒）
+    \item \textbf{输出}：未来15秒$V_{SW}$值
+    \item \textbf{模型}：
+    \begin{itemize}
+        \item 1D-CNN（卷积提取模式）
+        \item LSTM/GRU（长短期记忆）
+    \end{itemize}
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{物理意义}
+\begin{itemize}
+    \item $V_{SW}$骤降 + $V_{LW}$骤升 $\Rightarrow$ 云遮挡
+    \item $V_{SW}$骤升 + $V_{LW}$骤降 $\Rightarrow$ 云散开
+    \item 时间序列模式识别云的移动
+\end{itemize}
+\end{block}
+
+\begin{block}{应用场景}
+\begin{itemize}
+    \item \textbf{太阳能发电}：功率波动预警
+    \item \textbf{气象预报}：短期辐射变化
+    \item \textbf{舒适度监测}：体感温度预测
+    \item \textbf{农业}：作物光照预测
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\subsection{全光谱分离观测阵列}
+
+\begin{frame}{创新项目三：全光谱分离观测阵列}
+\frametitle{终极融合：彩色光谱 + 双谱分离}
+\begin{block}{项目目标}
+融合2024组的"彩色光谱分析"和本方案的"双谱分离"，构建史无前例的全光谱观测系统
+\end{block}
+
+\begin{columns}
+\column{0.5\textwidth}
+\begin{block}{装置A：短波光谱通道}
+\begin{itemize}
+    \item \textbf{4芯阵列}：黑、红、绿、蓝
+    \item 加装短波窗（薄玻璃片）
+    \item 阻断长波，只测短波
+    \item 分析天空颜色成分
+\end{itemize}
+\end{block}
+
+\begin{block}{装置B：长波总辐射}
+\begin{itemize}
+    \item 1块黑色热电芯片
+    \item 加装长波窗（黑色塑料膜）
+    \item 只测长波热辐射
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{数据输出}
+\textbf{短波光谱}（装置A）：
+\begin{itemize}
+    \item 天空是"深蓝"还是"灰白"
+    \item 太阳是"金黄"还是"惨白"
+    \item 分析瑞利散射、米氏散射
+\end{itemize}
+
+\textbf{长波热辐射}（装置B）：
+\begin{itemize}
+    \item 云层温度（"热云"vs"冷云"）
+    \item 大气逆辐射强度
+\end{itemize}
+\end{block}
+
+\begin{alertblock}{科学价值}
+真正意义上的"天空辐射观测仪"，可同时研究：
+\begin{itemize}
+    \item 瑞利散射（蓝天）
+    \item 米氏散射（雾霾、云）
+    \item 大气逆辐射（热量）
+\end{itemize}
+\end{alertblock}
+\end{columns}
+\end{frame}
+
+\section{实施方案与时间规划}
+
+\begin{frame}{项目实施步骤}
+\frametitle{分阶段实施计划}
+\begin{block}{第一阶段：基础系统搭建（2-3周）}
+\begin{enumerate}
+    \item 搭建自动化数据采集系统（ADS1115 + 树莓派）
+    \item 验证冷端稳定方案（散热鳍片 + 遮阳罩）
+    \item 测试差分测量抑制风噪效果
+\end{enumerate}
+\end{block}
+
+\begin{block}{第二阶段：双谱分离系统（3-4周）}
+\begin{enumerate}
+    \item 构建两套聚光装置
+    \item 配置长波窗材料
+    \item 验证双谱分离效果
+    \item 采集初步数据集
+\end{enumerate}
+\end{block}
+
+\begin{block}{第三阶段：创新应用开发（4-5周）}
+\begin{enumerate}
+    \item 部署摄像头，同步采集图像和辐射数据
+    \item 训练CNN天气识别模型
+    \item 开发时间序列预测模型
+    \item （可选）构建全光谱观测阵列
+\end{enumerate}
+\end{block}
+\end{frame}
+
+\begin{frame}{预期成果与创新点总结}
+\frametitle{项目预期成果}
+\begin{block}{技术成果}
+\begin{itemize}
+    \item 完整的双谱分离天空辐射观测系统
+    \item 高频、多通道自动化数据采集平台
+    \item 基于深度学习的智能天气分析模型
+    \item 辐射短期预报系统
+\end{itemize}
+\end{block}
+
+\begin{block}{数据成果}
+\begin{itemize}
+    \item 高质量、高频率的$V_{SW}$、$V_{LW}$时间序列数据集
+    \item 天空图像-辐射值配对数据集
+    \item （可选）全光谱（R/G/B/Black + LW）数据集
+\end{itemize}
+\end{block}
+
+\begin{block}{创新突破}
+\begin{enumerate}
+    \item \textbf{方法创新}：双通道物理分离代替复杂滤波轮
+    \item \textbf{技术创新}：完整的自动化采集解决方案
+    \item \textbf{应用创新}：深度学习驱动的智能天气分析
+    \item \textbf{系统创新}：从测量到预测的完整闭环
+\end{enumerate}
+\end{block}
+\end{frame}
+
+\begin{frame}{技术优势对比}
+\frametitle{相比往届项目的提升}
+\begin{table}
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{技术特性} & \textbf{2022秋季} & \textbf{2024秋季} & \textbf{本方案} \\
+\midrule
+数据采集方式 & 手动读表 & 手动读表 & \textcolor{green}{\textbf{全自动}} \\
+采样频率 & 低（分钟级） & 低（分钟级） & \textcolor{green}{\textbf{高（2 Hz）}} \\
+波段分离 & 无 & 无 & \textcolor{green}{\textbf{物理分离}} \\
+冷端稳定 & 简单 & 有问题 & \textcolor{green}{\textbf{完整方案}} \\
+数据量 & 小 & 小 & \textcolor{green}{\textbf{大（可训练CNN）}} \\
+图像分析 & 像素统计 & RGB直方图 & \textcolor{green}{\textbf{深度CNN}} \\
+预测功能 & 无 & 无 & \textcolor{green}{\textbf{时间序列预测}} \\
+光谱分析 & 无 & 简单RGB & \textcolor{green}{\textbf{可选全光谱}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{alertblock}{核心优势}
+\textbf{全面超越}往届方案，实现从"手动测量"到"智能预测"的跨越式发展
+\end{alertblock}
+\end{frame}
+
+\section{总结与展望}
+
+\begin{frame}{项目总结}
+\frametitle{总结}
+\begin{block}{核心贡献}
+\begin{enumerate}
+    \item \textbf{解决往届痛点}：
+    \begin{itemize}
+        \item 自动化采集 $\rightarrow$ 解决手动测量问题
+        \item 冷端稳定方案 $\rightarrow$ 解决日照加热问题
+        \item 差分测量 $\rightarrow$ 解决风噪干扰问题
+    \end{itemize}
+    
+    \item \textbf{技术创新}：
+    \begin{itemize}
+        \item 双谱分离 $\rightarrow$ 简单可行的波段分离方法
+        \item 深度学习应用 $\rightarrow$ 智能化天气分析
+        \item 时间序列预测 $\rightarrow$ 短期辐射预报
+    \end{itemize}
+    
+    \item \textbf{系统完整性}：
+    \begin{itemize}
+        \item 硬件（聚光+散热+采集）
+        \item 软件（自动化+数据处理）
+        \item 算法（CNN+LSTM）
+    \end{itemize}
+\end{enumerate}
+\end{block}
+\end{frame}
+
+\begin{frame}{应用前景与展望}
+\frametitle{应用前景}
+\begin{block}{短期应用}
+\begin{itemize}
+    \item 校园气象观测站
+    \item 太阳能电站功率预测
+    \item 体感舒适度监测
+\end{itemize}
+\end{block}
+
+\begin{block}{长期展望}
+\begin{itemize}
+    \item \textbf{低成本气象网络}：大规模部署，构建城市级辐射监测网
+    \item \textbf{云计算平台}：实时处理、云端AI分析
+    \item \textbf{气候研究}：长期数据积累，研究城市热岛效应、大气污染等
+    \item \textbf{教育推广}：作为教学实验平台，普及辐射测量知识
+\end{itemize}
+\end{block}
+
+\begin{alertblock}{终极目标}
+打造一个\textbf{开源、低成本、高精度、智能化}的天空辐射观测平台，为气象科学和新能源应用提供新工具
+\end{alertblock}
+\end{frame}
+
+\begin{frame}
+\centering
+\Huge 感谢聆听！
+
+\vspace{1cm}
+
+\Large 欢迎提问与讨论
+
+\vspace{1cm}
+
+\normalsize
+\textbf{联系方式}：第二组 \\
+\textbf{项目代码}：https://github.com/OliH-ver/thermoelectricity\_chip
+\end{frame}
 
 \end{document}
