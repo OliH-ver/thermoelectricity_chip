@@ -339,7 +339,7 @@ chan_B = AnalogIn(ads, ADS.P2, ADS.P3)
 with open('radiation_data.csv', 'w', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(['timestamp', 'V_SW', 'V_LW', 
-                     'V_total', 'V_longwave'])
+                     'V_total'])
     
     try:
         while True:
@@ -350,7 +350,7 @@ with open('radiation_data.csv', 'w', newline='') as f:
             
             timestamp = time.time()
             writer.writerow([timestamp, v_sw, v_longwave, 
-                           v_total, v_longwave])
+                           v_total])
             f.flush()  # 立即写入磁盘
             
             time.sleep(0.5)  # 2 Hz采样率
